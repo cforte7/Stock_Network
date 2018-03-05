@@ -8,6 +8,7 @@ import networkx as nx
 import datetime
 import itertools
 ticker_example = input('Please enter ticker to look up:\n')
+call_count = input('Please enter number of sets of 30 tweets to download:\n')
 auth_url = 'https://api.stocktwits.com/api/2/oauth/authorize?client_id=e50c61fe18c4076b&response_type=token&redirect_uri=http://www.example.com'
 url_base = 'https://api.stocktwits.com/api/2/streams/symbol/'
 url_two = '.json?max='
@@ -46,7 +47,7 @@ def twit_api_call(symbol):
         tweet_container.append([symbol_called,tweet_body,tweet_time,tweet_id,tweet_symbols]) #add row to list
     max_id = str(api_json['messages'][-1]['id']) #Oldest tweet called, used as parameter in next call to set time range
 max_id = init_api(ticker_example)
-for x in range(1):
+for x in range(call_count):
     twit_api_call(ticker_example)
 
 tweetFrame = pd.DataFrame(data=tweet_container,columns=df_columns)
