@@ -7,8 +7,11 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import datetime
 import itertools
+
 ticker_example = input('Please enter ticker to look up:\n')
-call_count = input('Please enter number of sets of 30 tweets to download:\n')
+call_count = input('Please enter number of sets of 30 tweets to download: (Reccommended 10)\n')
+add_node_count = input('Please enter max number of nodes off of the '+ticker_example+' node:\n')
+
 auth_url = 'https://api.stocktwits.com/api/2/oauth/authorize?client_id=e50c61fe18c4076b&response_type=token&redirect_uri=http://www.example.com'
 url_base = 'https://api.stocktwits.com/api/2/streams/symbol/'
 url_two = '.json?max='
@@ -46,8 +49,10 @@ def twit_api_call(symbol):
             tweet_symbols.append(z['symbol']) #append list with entry 'symbol' from 'symbols' entry
         tweet_container.append([symbol_called,tweet_body,tweet_time,tweet_id,tweet_symbols]) #add row to list
     max_id = str(api_json['messages'][-1]['id']) #Oldest tweet called, used as parameter in next call to set time range
+
 max_id = init_api(ticker_example)
-for x in range(call_count):
+
+for x in range(int(call_count)):
     twit_api_call(ticker_example)
 
 tweetFrame = pd.DataFrame(data=tweet_container,columns=df_columns)
@@ -69,7 +74,6 @@ unique_symbols = np.unique([ticker for innerlist in mentions for ticker in inner
 for x in unique_symbols:
     symbol_index[x] = len(symbol_index)
 
-
 mention_size = len(unique_symbols)
 mention_matrix = np.zeros((mention_size,mention_size))
 
@@ -83,16 +87,30 @@ for x in mentions:
         mention_matrix[row_index,column_index] += 1
 
 index_symbol = dict([(value,key) for key,value in symbol_index.items()])
-print(symbol_index)
+
 ticker_index = symbol_index[ticker_example]
 G = nx.Graph()
 G.add_node(str(ticker_example))
 node_labels = []
-for x in range(mention_matrix.shape[0]):
-    if mention_matrix[ticker_index,x] >= 1:
-        G.add_node(index_symbol[x])
-        G.add_edge(ticker_example,index_symbol[x])
 
+root_values = np.concatenate((mention_matrix[:ticker_index,ticker_index],[0],mention_matrix[ticker_index,ticker_index:]))
+candidate_count = sum(root_values>=1)
+
+
+#Construct graph from main stock node
+if candidate_count <= add_node_count:
+    root_indicies = root_values.argsort()[-candidate_count:][::-1]
+else:
+    root_indicies = root_values.argsort()[-add_node_count:][::-1]
+
+network_tickers = []
+for x in root_indicies:
+    network_tickers.append(index_symbol[x])
+    G.add_node(index_symbol[x])
+    G.add_edge(ticker_example,index_symbol[x])
+
+
+######Graph visual attributes - work in progress
 #graph_pos = nx.random_layout(G)
 #nx.draw_networkx_nodes(G, graph_pos, node_size=5000, node_color='blue', alpha=0.3)
 #nx.draw_networkx_edges(G, graph_pos)
