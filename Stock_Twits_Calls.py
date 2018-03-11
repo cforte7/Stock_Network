@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import requests
 import json
-from pprint import pprint
 import matplotlib.pyplot as plt
 import networkx as nx
 import datetime
@@ -16,9 +15,10 @@ save_flag = ''
 while save_flag not in ['y','n']:
     save_flag = input('Would you like to save API data as a Pandas DataFrame? y/n\n').lower()
 
-#Import Pandas Dataframe of Company information saved from Nasdaq site
+#Import Pandas Dataframe of Company information saved from Nasdaq site - for future features
 company_info = pd.read_pickle('C:\\Users\\Christopher Forte\\Documents\\Coding\\Stock_Network\\company_data.pickle')
 
+#Initialization to set max_id for API Calls
 def get_current_max(symbol):
     url_base = 'https://api.stocktwits.com/api/2/streams/symbol/' + str(symbol) + '.json?limit=1'
     init_call = requests.get(url_base)
@@ -30,10 +30,13 @@ def get_current_max(symbol):
 df_columns = ['stock_id','body','created_at','tweet_id','symbols']
 tweet_container = []  #list of lists to be made into pd.DataFrame
 used_tweets = []
+
+#Function to generate link to call API
 def generate_api_link(symbol):
     url_base = 'https://api.stocktwits.com/api/2/streams/symbol/'+str(symbol)+'.json?max='+max_id+'&limit=30'
     return url_base
 
+#Function to call API and store set of tweets
 def twit_api_call(symbol):
     tweet_temp = []
     api_url = generate_api_link(symbol)
@@ -55,6 +58,7 @@ def twit_api_call(symbol):
 max_id = get_current_max(ticker_example)
 initial_max = max_id
 
+#Initial set of calls for root node
 for x in range(int(call_count)):
     tweet_add, max_id = twit_api_call(ticker_example)
     tweet_container = tweet_container+tweet_add
@@ -68,7 +72,7 @@ if save_flag == 'y':
 
 
 
-#Extract entries that have more than one company mentioned
+#construct matrix of mentions as well as dictionaries of companies within API call
 def mention_construct(frame,ticker_called):
     tweet_symbols = np.array(frame.symbols)
     mentions = filter(lambda x: len(x) > 1, tweet_symbols)
@@ -101,12 +105,10 @@ def mention_construct(frame,ticker_called):
 root_indicies,symbol_index,index_symbol = mention_construct(tweetFrame,ticker_example)
 
 
-G = nx.Graph()
-G.add_node(str(ticker_example))
-node_labels = []
 
 
-#Construct graph from main stock node
+
+#Extract most mentioned companies for root company
 candidate_count = sum(root_indicies>=1)
 if candidate_count <= add_node_count:
     root_indicies = root_indicies.argsort()[-candidate_count:][::-1]
@@ -114,12 +116,17 @@ else:
     root_indicies = root_indicies.argsort()[-add_node_count:][::-1]
 
 network_tickers = []
+G = nx.Graph()
+G.add_node(str(ticker_example))
+node_labels = []
 
+#Construct graph from main stock node
 for x in root_indicies:
     network_tickers.append(index_symbol[x])
     G.add_node(index_symbol[x])
     G.add_edge(ticker_example,index_symbol[x])
 
+#API Calls for companies connected to root nodes
 for x in network_tickers:
     max_id = initial_max
     secondary_container = []
@@ -133,14 +140,12 @@ for x in network_tickers:
         G.add_edge(x,index_symbol[z])
 
 
-
-
-
-
+#Draw graph
 graph_pos = nx.spring_layout(G)
 nx.draw_networkx_nodes(G, graph_pos, node_size=5000, node_color='blue', alpha=0.3)
 nx.draw_networkx_edges(G, graph_pos)
 nx.draw_networkx_labels(G, graph_pos, font_size=9, font_family='sans-serif')
 
+#Save network diagram and show image
 plt.savefig(current_time+'_network_image.png')
 plt.show()
