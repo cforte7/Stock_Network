@@ -11,7 +11,7 @@ Numpy
 NetworkX
 Matplotlib
 ```
-##Running the Script
+## Running the Script
 Upon running the script you will be given three different prompts:
 
 ```
