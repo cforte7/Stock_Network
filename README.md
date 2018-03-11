@@ -49,11 +49,13 @@ Please enter ticker to look up:
 AAPL
 Please enter number of sets of 30 tweets to download: (Reccommended 10)
 10
-Please enter max number of nodes off of the '+ticker_example+' node:
+Please enter max number of nodes off of the AAPL node:
 6
 Would you like to save API data as a Pandas DataFrame? y/n
 y
 ```
 
-The following graph is generated
+The following graph is generated:
 ![Example Network](11_03_18_18_53_network_image.png)
+
+The saved DataFrame pickle and picture file can be found in the files for this Github project. 
